@@ -8,14 +8,13 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-source .env
+. ./.env
 
 # Substitute variables into tinyproxy.conf.template
 ALLOWED_LINES=""
 IFS=',' read -ra ADDR <<< "$TINYPROXY_ALLOWED_IPS"
 for ip in "${ADDR[@]}"; do
-  ALLOWED_LINES+="Allow $ip"$'
-'
+  ALLOWED_LINES+="Allow $ip"$'\n'
 done
 
 TINYPROXY_CONF=$(< tinyproxy.conf.template)

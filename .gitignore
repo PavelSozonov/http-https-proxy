@@ -1,0 +1,6 @@
+# Ignore the real .env file
+.env
+
+# Optional: ignore any generated config or log files
+*.log
+*.pid

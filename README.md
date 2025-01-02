@@ -1,35 +1,57 @@
-# Tinyproxy Setup on Ubuntu
+# Tinyproxy + Stunnel + Let’s Encrypt on Ubuntu
 
-This repository provides instructions and configuration files to set up [Tinyproxy](https://tinyproxy.github.io/) as an HTTP/HTTPS proxy on an Ubuntu server.
+This repository provides a simple configuration to set up a secure HTTPS proxy using:
 
-## Overview
-
-Tinyproxy is a lightweight, open-source proxy daemon that is easy to configure and well-suited for small and embedded deployments.
-
-## Features
-
-- Handles HTTP connections (with optional HTTPS tunneling via CONNECT).
-- Simple configuration to allow or deny specific IP ranges.
-- Basic authentication support.
+- [Tinyproxy](https://tinyproxy.github.io/) as the HTTP proxy server
+- [Stunnel](https://www.stunnel.org/) to provide TLS encryption for Tinyproxy
+- [Certbot](https://certbot.eff.org/) (from [Let’s Encrypt](https://letsencrypt.org/)) to obtain SSL certificates automatically
 
 ## Prerequisites
 
-- **Ubuntu** (tested on Ubuntu 20.04/22.04)
-- **sudo** privileges on the server.
+- A public Ubuntu server with ports 80 and 443 open.
+- A valid domain name pointing to the server’s IP (required for Let’s Encrypt).
 
-## Files
+## Quick Start
 
-1. **README.md**
-   The primary documentation file. Explains all the steps to install and configure Tinyproxy on Ubuntu, along with any additional information.
+1. **Create your `.env` file** from the included template:
+   ```bash
+   cp .env.template .env
+   ```
+   - Edit `.env` to set:
+     - `TINYPROXY_PORT` (defaults to 8888)
+     - `TINYPROXY_ALLOWED_IPS` (comma-separated)
+     - `TINYPROXY_AUTH_LOGIN` and `TINYPROXY_AUTH_PASSWORD` for Basic Auth
+     - `CERTBOT_DOMAIN` and `CERTBOT_EMAIL`
+     - `SSL_CERT_PATH` and `SSL_KEY_PATH` (where Certbot places the certificates)
 
-2. **tinyproxy.conf**
-   The Tinyproxy configuration file. Contains all the relevant settings, including the port, allowed IP addresses, and BasicAuth credentials.
+2. **Run the configuration script**:
+   ```bash
+   chmod +x configure.sh
+   ./configure.sh
+   ```
+   This script will:
+   - Install `tinyproxy`, `stunnel4`, and `certbot`
+   - Generate `/etc/tinyproxy/tinyproxy.conf` and `/etc/stunnel/tinyproxy.conf` using your environment variables
+   - Request an SSL certificate from Let’s Encrypt using the standalone method
+   - Enable and start both `tinyproxy` and `stunnel4`
 
-3. **install_tinyproxy.sh**
-   A simple script that automates the installation, configuration, and firewall setup.
+3. **Verify** everything is working:
+   - Check if you can reach the secure proxy:
+     - Via `https://your-domain:443` (Stunnel is listening on port 443)
+     - Tinyproxy is behind Stunnel on `127.0.0.1:8888`, so you only connect via SSL from outside.
+   - Check logs:
+     ```bash
+     sudo journalctl -u tinyproxy
+     sudo journalctl -u stunnel4
+     ```
 
----
+4. **Adjust firewall rules** (if needed) to ensure inbound traffic on ports `80` (for Let’s Encrypt) and `443` (for stunnel) are allowed.
 
-For complete instructions, refer to the sections in this README.
+## Notes
 
-Set `BasicAuth <login> <password>` and add allowed IP in config.
+- Certificates are stored by default in `/etc/letsencrypt/live/<domain>/`.
+- If renewal is needed, you can rely on the auto-renew cron job from `certbot` or run:
+  ```bash
+  sudo certbot renew
+  ```
+- If you need to further lock down your Stunnel config, you can disable older TLS protocols or ciphers.

@@ -34,6 +34,10 @@ sudo apt-get install -y tinyproxy stunnel4 certbot
 echo "$TINYPROXY_CONF" | sudo tee /etc/tinyproxy/tinyproxy.conf > /dev/null
 echo "$STUNNEL_CONF" | sudo tee /etc/stunnel/tinyproxy.conf > /dev/null
 
+# Fix config: without this fix access control will not work
+# Default value from config (# FLAGS="-c ${CONFIG}") do not work,
+echo 'FLAGS="-c /etc/tinyproxy/tinyproxy.conf"' >> /etc/default/tinyproxy
+
 sudo systemctl enable tinyproxy
 sudo systemctl enable stunnel4
 
